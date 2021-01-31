@@ -1,0 +1,113 @@
+<%- include("templates/head", {title: "GIPHY Finder - Registrar"}) %> 
+
+<script src = "static/validator.js"></script>
+
+<body class = "static-page">
+
+    <div class = "register-wrapper">
+
+        <form id = "register-form" action = "">
+
+            <div class = "register-title">
+                <h1>Registrar</h1>
+                <p id = "ERROR"></p>
+            </div>
+
+            <input required placeholder = "APELIDO" id = "username-input" class= "text-input" type = "text">
+
+            <input required placeholder = "EMAIL" id = "email-input" class = "text-input" type = "text">
+
+            <input required placeholder = "SENHA" id = "password-input" class= "password-input" type = "password">
+            <input required placeholder = "REPETIR SENHA" id = "repeat-password-input" class= "password-input" type = "password">
+
+            <button class = "button" type = "submit">Registrar</button>
+
+        </form>
+        
+
+    </div>
+
+</body>
+
+<script>
+
+    class Register {
+
+        constructor () {
+
+            $("#register-form").submit(( event ) => {
+                
+                event.preventDefault();
+
+                Register.send();
+
+            })
+
+        }
+
+        static getValues () {
+
+            const username = $("#username-input").val();
+            const email = $("#email-input").val();
+            const password = $("#password-input").val();
+            const repeatPassword = $("#repeat-password-input").val();
+
+            return {
+                username,
+                email,
+                password,
+                repeatPassword,
+                passwordMatch: password == repeatPassword
+            };
+
+        }
+
+        static error ( message ) {
+            $("#ERROR").text(message);
+        }
+
+        static async send () {
+
+            const values = Register.getValues();
+
+            if ( !values.passwordMatch ) {
+                Register.error("As senhas não coincidem.");
+                return;
+            }
+
+            if ( values.username.length < 6 ) {
+                Register.error("Nome de usúario muito curto.");
+                return;
+            }
+
+
+            const result = await fetch("/users/register", {
+
+                headers: {
+                    "Content-Type" : "application/json"
+                },
+                body: JSON.stringify({
+                    username: values.username,
+                    email: values.email,
+                    password: values.password
+                }),
+                method: "POST"
+
+            });
+
+            if ( result.ok ) {
+                window.location.href = "/users/me/favorites";
+            }
+
+
+        }
+
+    }
+
+    new Register();
+
+
+</script>
+
+
+</html>

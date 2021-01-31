@@ -1,0 +1,147 @@
+<%- include("templates/head", {title: "GIPHY Finder! - " + query}) %> 
+
+<body class = "static-page">
+
+    <%- include("templates/header")  %> 
+
+    <h1 id = "search-title">
+        <%= query %>
+    </h1>
+
+    <div class = "gifs-wrapper">
+    </div>
+
+</body>
+
+<%- include("scripts/scripts") %>
+
+<script>
+
+    class InfiniteScroller {
+
+        constructor (toggler, nameChanger) {
+            this.toggler = toggler;
+            this.nameChanger = nameChanger;
+            this.offset = 0;
+            this.limit = 50;
+            this.searchString = "<%= query %>";
+            this.queue = 0;
+        }
+
+        static isInBottom () {
+            return $(window).scrollTop() + $(window).height() == $(document).height();
+        }
+
+        makeContainer ( infos ) {
+
+            const wrapper = $("<div>").addClass("invisible").addClass("embed-gif");
+            
+            const img = $("<img>")
+                .attr("src", "https://i.giphy.com/" + infos.uid + "/source.gif")
+                .attr("width", "100%")
+                .attr("height", "100%");
+
+            const options = $("<div>").addClass("gif-options-wrapper");
+
+            const star = $("<i>").addClass("fa-star").addClass("favorite-toggler")
+                .attr("data-favorite", `${infos.favorite}`)
+                .attr("data-uid", infos.uid)
+                .attr("data-name", infos.name)
+                .addClass(infos.favorite? "fas" : "far");
+
+            this.toggler.bind(star);
+
+            options.append(star);
+            wrapper.append(options);
+            wrapper.append(img);
+
+            return wrapper;
+
+        }
+
+        makeNameContainer (infos) {
+
+            const imgEditWrapper = $("<div>").addClass("img-name-wrapper");
+
+            const editIcon = $("<i>").addClass("fas").addClass("fa-edit");
+            const editNameButton = $("<button>").addClass("img-name-change").addClass("button");
+
+            const nameDisplay = $("<input>").addClass("embed-img-name").prop("disabled", true);
+                
+            editNameButton.text("Editar").prepend(editIcon);
+            nameDisplay.val(infos.name);
+
+            imgEditWrapper.append(editNameButton);
+            imgEditWrapper.append(nameDisplay);
+
+            this.nameChanger.bind($(editNameButton));
+
+            return imgEditWrapper;
+
+        }
+
+        async generateNew () {
+
+            if ( this.queue > 0 ){
+                return;
+            }
+
+            const result = await fetch(`/images/search?limit=${this.limit}&offset=${this.offset}&searchString=${this.searchString}`, {method: "GET"});
+
+            this.offset += this.limit;
+
+            const response = await result.json();
+
+            this.queue += response.length;
+
+            const elems = response.map( infos => {
+
+                const wrapper = this.makeContainer(infos);
+                const nameWrapper = this.makeNameContainer(infos);
+
+                if (infos.name) {
+                    wrapper.append(nameWrapper);
+                }
+
+                const self = this;
+
+                wrapper.find("img").on("load", function () {
+                    self.queue -= 1;
+                    wrapper.removeClass("invisible");
+                });
+
+                return wrapper;
+
+            });
+
+            $(".gifs-wrapper").append(elems);
+
+        }
+
+        listen () {
+
+            $(window).scroll( async () => {
+
+                if( InfiniteScroller.isInBottom() ) {
+
+                    await this.generateNew();
+
+                }
+
+            });
+
+        }
+
+    }
+
+    const nameChanger = new NameChanger("img-name-change");
+    const toggler = new FavoriteToggler("favorite-toggler", nameChanger);
+    const scroller = new InfiniteScroller(toggler, nameChanger);
+
+    scroller.generateNew();
+    scroller.listen();
+
+
+</script>
+
+</html>

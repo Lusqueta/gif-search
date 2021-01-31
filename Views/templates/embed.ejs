@@ -1,0 +1,35 @@
+<div class = "embed-gif">
+
+    <div class = "gif-options-wrapper">
+
+        <i
+            data-favorite = "<%=img.favorite%>"
+            data-uid = "<%= img.uid %>"
+            data-name = "<%=img.name%>"
+            
+            class = "favorite-toggler <%= img.favorite ? "fas fa-star" : "far fa-star" %>"
+        >
+        </i>
+
+    </div>    
+
+    <img
+        src="https://i.giphy.com/<%= img.uid %>/source.gif"
+        width = "100%"
+        height = "100%"
+    >
+    </img>
+
+    <% if (img.name) { %>
+        
+        <div class = "img-name-wrapper">
+            <button class = "img-name-change button">
+                <i class = "fas fa-edit"></i> Editar
+            </button>
+            <input disabled class = "embed-img-name" value = "<%= img.name %>"></input>
+        </div>
+
+    <% } %> 
+
+</div>
+

@@ -1,0 +1,306 @@
+
+<div class = "name-input-bg invisible">
+
+    <div class = "name-input-wrapper">
+
+        <div class = "name-input-image">
+            <i class = "fas fa-star"></i>
+            <img id = "gif-thumb" src = "https://i.giphy.com/QmBC5SV6UkbGCeW0cm/source.gif">
+        </div>
+
+        <div class = "name-input-inputs-wrapper">
+
+            <h1>
+                Nomeie seu gif:
+            </h1>
+
+            <div class = "name-input-inputs">
+                <input id = "image-name-input" class = "text-input" placeholder = "Nome">
+                <button id = "image-name-send" class = "button">Aplicar</button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+<script>
+
+    /*
+
+        Remove o event listener do input de nome
+        se nao fizer isso o input faz chamadas exponenciais
+
+        1 > 3 > 6 > ...
+
+    */
+    $(".name-input-bg").click( function () {
+        
+        const send = document.getElementById("image-name-send");
+
+        $(this).addClass("invisible");
+        $("#image-name-send").unbind("click");
+
+        send.onclick = null;
+
+    }).children().click(function (e) {
+        return false;
+    })
+
+    function getName (link, name, callback) {
+
+        const end = () => {
+
+            const send = document.getElementById("image-name-send");
+
+            $(".name-input-bg").addClass("invisible");
+            
+            send.onclick = null;
+
+        }
+
+        $("#gif-thumb").attr("src", link).on("load", () => {
+
+            const send = document.getElementById("image-name-send");
+
+            $("#image-name-input").val(name == "Unnamed" ? "" : name);
+
+            $(".name-input-bg").removeClass("invisible");
+        
+            const handler = async () => {
+
+                const name = $("#image-name-input").val();
+                
+                callback(name, end);
+
+                return false;
+
+            }
+
+            send.onclick = handler;
+
+        });
+
+    }
+
+</script>
+
+<script>
+    
+    class FavoriteToggler {
+
+        constructor ( className, nameChanger ) {
+
+            this.className = className;
+            this.nameChanger = nameChanger;
+            this.togglers = $(`.${className}`);
+            this.inProcess = false;
+
+        }
+
+        static toggle ( favorite, elem ) {
+
+            elem = $(elem);
+
+            favorite ? elem.removeClass("fas").addClass("far") : elem.removeClass("far").addClass("fas");
+
+        }
+
+        async favorite (pName, favorite, uid, elem) {
+
+            getName( `https://i.giphy.com/${uid}/source.gif`, pName, async (name, end) => {
+
+                try {
+
+                    const result = await fetch("/images/favorite", {
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        method: "POST",
+                        body: JSON.stringify({
+                            uid,
+                            name: name || "Unnamed"
+                        })
+
+                    });
+
+                    if ( result.ok ) {
+
+                        FavoriteToggler.toggle(favorite, elem);
+
+                        const wrapper = $(elem).parent().parent();
+                        const hasImageName = wrapper.has(".embed-img-name").length > 0;
+
+                        if (!pName && !hasImageName) {
+
+                            const imgEditWrapper = $("<div>").addClass("img-name-wrapper");
+
+                            const editIcon = $("<i>").addClass("fas").addClass("fa-edit");
+                            const editNameButton = $("<button>").addClass("img-name-change").addClass("button");
+                                
+                            const nameDisplay = $("<input>").addClass("embed-img-name").prop("disabled", true);
+                                
+                            editNameButton.text("Editar").prepend(editIcon);
+                            nameDisplay.val(name);
+
+                            imgEditWrapper.append(editNameButton);
+                            imgEditWrapper.append(nameDisplay);
+
+                            this.nameChanger.bind( $(editNameButton) );
+
+                            wrapper.append(imgEditWrapper);
+
+                        }
+
+                        $(elem).parent().parent().find(".img-name-wrapper").find(".embed-img-name").val(name);
+
+                        $(elem).attr("data-name", name);
+                        $(elem).attr("data-favorite", `${!favorite}`);
+
+                    }
+
+                    end();
+
+                } catch (e) {
+                    console.log(e);
+                }
+
+            });
+        }
+
+        async unfavorite (pName, favorite, uid, elem) {
+            try {
+
+                const result = await fetch("/images/favorite", {
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    method: "DELETE",
+                    body: JSON.stringify({
+                        uid
+                    })
+
+                });
+
+                if ( result.ok ) {
+                    FavoriteToggler.toggle(favorite, elem);
+                    $(elem).attr("data-favorite", `${!favorite}`);
+                }
+
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        bind ( elem ) {
+
+            const self = this;
+
+            elem.click(async function () {
+
+                if (self.inProcess) {
+                    return false;
+                }
+
+                self.inProcess = true;
+
+                const favorite = $(this).attr("data-favorite").trim() == "true";
+                const uid = $(this).attr("data-uid");
+                const pName = $(this).attr("data-name");
+                
+                favorite ? self.unfavorite(pName, favorite, uid, this) : self.favorite(pName, favorite, uid, this);
+
+                self.inProcess = false;
+
+            });
+            
+        }
+
+        bindAll () {
+
+            const self = this;
+
+            this.togglers.each( function () {
+                self.bind($(this));
+            } );
+            
+
+        }
+
+    }
+    
+
+</script>
+
+
+<script>
+
+class NameChanger {
+
+    constructor ( className ) {
+        this.className = className;
+        this.inputs = $(`.${className}`)
+    }
+
+    bind (elem) {
+
+        elem.click( function () {
+
+            const wrapper = $(this).parent().parent();
+            const input = $(this).parent().find(".embed-img-name");
+            const star = wrapper.find(".gif-options-wrapper").find(".fa-star");
+
+            const link = wrapper.find("img").attr("src");
+            const name = input.val();
+            const uid = link.split("/")[3];
+
+            getName (link, name, async (newName, end) => {
+
+                newName = newName || "Unnamed";
+
+                const result = await fetch("/images", {
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    method: "PATCH",
+                    body: JSON.stringify({
+                        uid,
+                        name: newName
+                    })
+
+                });
+
+                if (result.ok) {
+                    
+                    input.val(newName);
+                    star.attr("data-name", newName);
+
+                }
+
+                end();
+
+            });
+
+        });
+
+    }
+
+    bindAll () {
+
+        const self = this;
+
+        this.inputs.each(function () {
+            self.bind($(this));
+        })
+
+    }
+
+}
+
+</script>

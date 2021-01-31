@@ -1,0 +1,116 @@
+<%- include("templates/head", {title: "GIPHY Finder!"}) %> 
+
+<body class = "static-page">
+
+    <div class = "login-wrapper">
+        
+        <form id = "login-form" action = "">
+
+            <div class = "login-title">
+                <h1>Entrar</h1>
+                <p id = "ERROR"></p>
+            </div>
+
+            <input required placeholder = "EMAIL" id = "email-input" class = "text-input" type = "text">
+
+            <input required placeholder = "SENHA" id = "password-input" class= "password-input" type = "password">
+
+            <button class = "button" type = "submit">Entrar</button>
+
+            <div class = "infos">
+            
+                <p>Não tem uma conta? <a href = "/register">Crie uma!</a></p>
+                <p>Precisa de ajuda? <a href = "http://google.com">Clique aqui</a>.</p>
+    
+            </div>
+
+        </form>
+
+    </div>
+
+</body>
+
+<script>
+
+
+    class Login {
+
+        constructor (formId) {
+            this.elem = $(`#${formId}`);
+        }
+
+        listen () {
+
+            this.elem.submit( (event) => {
+                
+                event.preventDefault();
+
+                this.submit();
+            })
+
+
+        }
+
+        static async checkCredentials ( email, password ) {
+
+            try {
+
+                const result = await fetch("/users/login", {
+                    headers: {
+                        "Content-Type" : "application/json"
+                    },
+                    method: "POST",
+                    body: JSON.stringify({email, password}),
+                })
+
+                return result.ok > 0;
+
+            } catch (e) {
+                return false;
+            }
+
+        }
+
+        getCredentials(){
+
+            const email = $("#email-input").val();
+            const password = $("#password-input").val();
+
+            return {email, password}
+
+        }
+
+        static wrong () {
+
+            $("#email-input").addClass("wrong");
+            $("#password-input").addClass("wrong");
+
+            setTimeout(() => {
+                $("#email-input").removeClass("wrong")
+                $("#password-input").removeClass("wrong");
+            }, 10);
+
+            $("#ERROR").text("Email ou senha incorretos.")
+
+        }
+
+        static correct () {
+            window.location.href = "/users/me/favorites";
+        }
+
+        async submit () {
+
+            const {email, password} = this.getCredentials();
+
+            await Login.checkCredentials(email, password) ? Login.correct() : Login.wrong();
+
+        }
+
+    }
+
+    new Login("login-form").listen();
+
+</script>
+
+
+</html>

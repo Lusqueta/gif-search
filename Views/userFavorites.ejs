@@ -1,0 +1,47 @@
+
+<%- include("templates/head", {title: user.username + " - Favorites"}) %> 
+
+<body class = "static-page">
+
+    <%- include("templates/header") %>
+
+    <h1 id = "search-title">
+        Seus favoritos <i class = "fas fa-star"></i>
+    </h1>
+
+
+    <div class = "gifs-wrapper">
+
+        <% if (favorites.length > 0) {%>
+
+            <% favorites.forEach( img => { %>
+            
+                <%- include("templates/embed", {img}); %>
+
+            <% } ) %>
+        
+        <% }else{%>
+
+            <div class = "none-found">
+                <h2> 😢 Você ainda não tem favoritos, pesquise por alguns gifs na barra acima.</h2>
+            </div>
+
+        <% } %>
+
+    </div>
+
+</body>
+
+<%- include("scripts/scripts") %> 
+
+<script>
+
+    const nameChanger = new NameChanger("img-name-change");
+    const toggler = new FavoriteToggler("favorite-toggler", nameChanger);
+
+    toggler.bindAll();
+    nameChanger.bindAll();
+
+</script>
+
+</html>
